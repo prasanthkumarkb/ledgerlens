@@ -386,23 +386,6 @@ These folders are ignored by Git.
 
 ---
 
-# Future Enhancements
-
-- OCR Integration (Azure Document Intelligence / AWS Textract)
-- PDF Invoice Support
-- Authentication & Authorization
-- User Management
-- Export to Excel/PDF
-- Email Notifications
-- Docker Support
-- PostgreSQL Support
-- Background Processing with Celery
-- Unit & Integration Tests
-- CI/CD Pipeline
-- Cloud Deployment (AWS/Azure)
-
----
-
 # Author
 
 **Prasanth Kumar K B**
