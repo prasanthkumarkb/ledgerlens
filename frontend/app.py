@@ -14,9 +14,10 @@ st.set_page_config(
 st.title("📄 LedgerLens")
 st.subheader("AI Invoice Extraction")
 
-tab1, tab2 = st.tabs([
+tab1, tab2, tab3 = st.tabs([
     "Upload Invoice",
-    "Documents"
+    "Documents",
+    "Manual Review"
 ])
 
 #############################################
@@ -140,3 +141,136 @@ with tab2:
                         width='stretch',
                         hide_index=True
                     )
+            
+#############################################
+# Manual Review
+#############################################
+
+with tab3:
+
+    st.header("Manual Review")
+
+    document_id = st.number_input(
+        "Document ID",
+        min_value=1,
+        step=1
+    )
+
+    if st.button("Load Document"):
+
+        response = requests.get(
+            f"{API_URL}/document/{document_id}"
+        )
+
+        if response.status_code == 200:
+
+            st.session_state["review_doc"] = response.json()
+
+        else:
+
+            st.error("Document Not Found")
+
+    if "review_doc" in st.session_state:
+
+        doc = st.session_state["review_doc"]
+
+        vendor = st.text_input(
+            "Vendor",
+            value=doc.get("vendor") or ""
+        )
+
+        invoice_number = st.text_input(
+            "Invoice Number",
+            value=doc.get("invoice_number") or ""
+        )
+
+        invoice_date = st.text_input(
+            "Invoice Date",
+            value=doc.get("invoice_date") or ""
+        )
+
+        currency = st.text_input(
+            "Currency",
+            value=doc.get("currency") or ""
+        )
+
+        subtotal = st.number_input(
+            "Subtotal",
+            value=float(doc.get("subtotal") or 0)
+        )
+
+        tax = st.number_input(
+            "Tax",
+            value=float(doc.get("tax") or 0)
+        )
+
+        total = st.number_input(
+            "Total",
+            value=float(doc.get("total") or 0)
+        )
+
+        confidence = st.slider(
+            "Confidence",
+            0.0,
+            1.0,
+            float(doc.get("overall_confidence") or 0)
+        )
+
+        status = st.selectbox(
+            "Status",
+            [
+                "uploaded",
+                "processed",
+                "reviewed",
+                "approved"
+            ],
+            index=0
+            if doc.get("status") is None
+            else [
+                "uploaded",
+                "processed",
+                "reviewed",
+                "approved"
+            ].index(doc.get("status"))
+        )
+
+        if st.button("Save Changes"):
+
+            payload = {
+
+                "vendor": vendor,
+
+                "invoice_number": invoice_number,
+
+                "invoice_date": invoice_date,
+
+                "currency": currency,
+
+                "subtotal": subtotal,
+
+                "tax": tax,
+
+                "total": total,
+
+                "overall_confidence": confidence,
+
+                "status": status
+            }
+
+            response = requests.put(
+
+                f"{API_URL}/document/{document_id}",
+
+                json=payload
+
+            )
+
+            if response.status_code == 200:
+
+                st.success("Document Updated Successfully")
+
+                st.session_state.pop("review_doc")
+
+            else:
+
+                st.error(response.text)

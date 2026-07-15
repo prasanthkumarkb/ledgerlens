@@ -14,6 +14,7 @@ from database.database import get_db
 from models.document import Document
 from schemas.invoice import UploadResponse
 from services.vision import extract_invoice
+from schemas.invoice import DocumentUpdate
 router = APIRouter()
 
 UPLOAD_FOLDER = "uploads"
@@ -154,4 +155,56 @@ def extract_document(
     return {
         "message":"Invoice extracted",
         "data":result
+    }
+
+@router.get("/document/{document_id}")
+def get_document(
+    document_id: int,
+    db: Session = Depends(get_db)
+):
+
+    document = db.get(Document, document_id)
+
+    if document is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    return document
+
+@router.put("/document/{document_id}")
+def update_document(
+    document_id: int,
+    payload: DocumentUpdate,
+    db: Session = Depends(get_db)
+):
+
+    document = db.get(Document, document_id)
+
+    if document is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    document.vendor = payload.vendor
+    document.invoice_number = payload.invoice_number
+    document.invoice_date = payload.invoice_date
+    document.currency = payload.currency
+    document.subtotal = payload.subtotal
+    document.tax = payload.tax
+    document.total = payload.total
+    document.overall_confidence = payload.overall_confidence
+    document.status = payload.status
+
+    db.commit()
+
+    db.refresh(document)
+
+    return {
+        "message": "Updated Successfully",
+        "document": document
     }

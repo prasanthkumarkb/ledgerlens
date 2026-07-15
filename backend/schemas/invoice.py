@@ -35,3 +35,23 @@ class InvoiceExtraction(BaseModel):
     total: float | None = None
 
     confidence: float
+    
+class DocumentUpdate(BaseModel):
+
+    vendor: str | None = None
+
+    invoice_number: str | None = None
+
+    invoice_date: str | None = None
+
+    currency: str | None = None
+
+    subtotal: float | None = None
+
+    tax: float | None = None
+
+    total: float | None = None
+
+    overall_confidence: float | None = None
+
+    status: str | None = None
