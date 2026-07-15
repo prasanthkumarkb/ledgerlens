@@ -2,6 +2,7 @@ import requests
 import streamlit as st
 import pandas as pd
 from PIL import Image
+import matplotlib.pyplot as plt
 
 API_URL = "http://127.0.0.1:8000"
 
@@ -14,10 +15,11 @@ st.set_page_config(
 st.title("📄 LedgerLens")
 st.subheader("AI Invoice Extraction")
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "Upload Invoice",
     "Documents",
-    "Manual Review"
+    "Manual Review",
+    "Dashboard"
 ])
 
 #############################################
@@ -108,39 +110,104 @@ with tab1:
 
 with tab2:
 
-    if st.button("Refresh"):
+    st.header("Documents")
 
-        response = requests.get(
-            f"{API_URL}/documents"
+    col1, col2 = st.columns(2)
+
+    with col1:
+        vendor = st.text_input("Vendor")
+
+    with col2:
+        filename = st.text_input("Filename")
+
+    col3, col4 = st.columns(2)
+
+    with col3:
+        status = st.selectbox(
+            "Status",
+            ["", "uploaded", "processed", "approved"]
         )
-        df = pd.DataFrame()
-        if response.status_code == 200:
 
-            documents = response.json()
-            if documents:
-                df = pd.DataFrame(documents)
+    with col4:
+        page_size = st.selectbox(
+            "Page Size",
+            [5, 10, 20, 50],
+            index=1
+        )
 
-            if  df.empty:
+    col5, col6 = st.columns(2)
 
-                st.warning("No Documents Found")
+    with col5:
+        sort_by = st.selectbox(
+            "Sort By",
+            ["id", "vendor", "filename", "invoice_date", "total"]
+        )
 
-            else:
+    with col6:
+        order = st.selectbox(
+            "Order",
+            ["desc", "asc"]
+        )
 
-               df = df.drop(
-                    columns=[
-                        "image_path",
-                        "extracted_json",
-                        "created_at",
-                        "updated_at"
-                    ],
-                    errors="ignore"
-                )
+    page = st.number_input(
+        "Page",
+        min_value=1,
+        value=1,
+        step=1
+    )
+
+    params = {
+        "vendor": vendor,
+        "filename": filename,
+        "status": status,
+        "page": page,
+        "page_size": page_size,
+        "sort_by": sort_by,
+        "order": order
+    }
+
+    response = requests.get(
+        f"{API_URL}/documents",
+        params=params
+    )
+
+    if response.status_code == 200:
+
+        result = response.json()
+
+        st.write(f"Total Records: {result['total']}")
+        st.write(f"Page: {result['page']} of {result['total_pages']}")
+
+        documents = result["data"]
+
+        if documents:
+
+            df = pd.DataFrame(documents)
+
+            display_columns = [
+                "id",
+                "filename",
+                "vendor",
+                "invoice_number",
+                "invoice_date",
+                "currency",
+                "total",
+                "overall_confidence",
+                "status"
+            ]
+
+            display_columns = [
+                c for c in display_columns if c in df.columns
+            ]
 
             st.dataframe(
-                        df,
-                        width='stretch',
-                        hide_index=True
-                    )
+                df[display_columns],
+                use_container_width=True,
+                hide_index=True
+            )
+
+        else:
+            st.warning("No Documents Found")
             
 #############################################
 # Manual Review
@@ -284,3 +351,173 @@ with tab3:
             else:
 
                 st.error(response.text)
+                
+#############################################
+# Dashboard
+#############################################
+
+with tab4:
+
+    st.header("📊 LedgerLens Dashboard")
+
+    if st.button("🔄 Refresh Dashboard"):
+
+        st.rerun()
+
+    ####################################################
+    # Dashboard Summary
+    ####################################################
+
+    response = requests.get(f"{API_URL}/dashboard")
+
+    if response.status_code != 200:
+
+        st.error("Unable to load dashboard")
+
+    else:
+
+        dashboard = response.json()
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric(
+                "📄 Documents",
+                dashboard["total_documents"]
+            )
+
+        with col2:
+            st.metric(
+                "📤 Uploaded",
+                dashboard["uploaded"]
+            )
+
+        with col3:
+            st.metric(
+                "✅ Processed",
+                dashboard["processed"]
+            )
+
+        with col4:
+            st.metric(
+                "✔ Approved",
+                dashboard["approved"]
+            )
+
+        st.divider()
+
+        col5, col6, col7 = st.columns(3)
+
+        with col5:
+            st.metric(
+                "Today's Uploads",
+                dashboard["today_uploads"]
+            )
+
+        with col6:
+            st.metric(
+                "Average Confidence",
+                f"{dashboard['average_confidence']:.2f}"
+            )
+
+        with col7:
+            st.metric(
+                "Invoice Amount",
+                f"₹ {dashboard['total_invoice_amount']:.2f}"
+            )
+
+    ####################################################
+    # Charts
+    ####################################################
+
+    left, right = st.columns(2)
+
+    ########################################
+    # Pie Chart
+    ########################################
+
+    with left:
+
+        response = requests.get(
+            f"{API_URL}/dashboard/status"
+        )
+
+        if response.status_code == 200:
+
+            status = response.json()
+
+            if status:
+
+                labels = [x["status"] for x in status]
+
+                values = [x["count"] for x in status]
+
+                fig, ax = plt.subplots(figsize=(3,3))
+
+                ax.pie(
+                    values,
+                    labels=labels,
+                    autopct="%1.1f%%",
+                    startangle=90
+                )
+
+                ax.set_title(
+                    "Document Status",
+                    fontsize=12
+                )
+
+                st.pyplot(
+                    fig,
+                    use_container_width=False
+                )
+
+            else:
+
+                st.info("No status data available.")
+
+    ########################################
+    # Bar Chart
+    ########################################
+
+    with right:
+
+        response = requests.get(
+            f"{API_URL}/dashboard/daily"
+        )
+
+        if response.status_code == 200:
+
+            daily = response.json()
+
+            if daily:
+
+                dates = [x["date"] for x in daily]
+
+                counts = [x["count"] for x in daily]
+
+                fig, ax = plt.subplots(figsize=(5,3))
+
+                ax.bar(
+                    dates,
+                    counts
+                )
+
+                ax.set_title(
+                    "Daily Uploads",
+                    fontsize=12
+                )
+
+                ax.set_xlabel("Date")
+
+                ax.set_ylabel("Documents")
+
+                plt.xticks(rotation=45)
+
+                st.pyplot(
+                    fig,
+                    use_container_width=False
+                )
+
+            else:
+
+                st.info("No upload history available.")
