@@ -113,18 +113,18 @@ with tab2:
         response = requests.get(
             f"{API_URL}/documents"
         )
-
+        df = pd.DataFrame()
         if response.status_code == 200:
 
             documents = response.json()
+            if documents:
+                df = pd.DataFrame(documents)
 
-            if len(documents) == 0:
+            if  df.empty:
 
                 st.warning("No Documents Found")
 
             else:
-
-               df = pd.DataFrame(documents)
 
                df = df.drop(
                     columns=[
@@ -232,6 +232,16 @@ with tab3:
                 "reviewed",
                 "approved"
             ].index(doc.get("status"))
+        )
+        
+        st.subheader("Processed Invoice")
+
+        image_url = f"{API_URL}/processed/{document_id}"
+
+        st.image(
+            image_url,
+            caption="Watermarked Invoice",
+            use_container_width=True
         )
 
         if st.button("Save Changes"):

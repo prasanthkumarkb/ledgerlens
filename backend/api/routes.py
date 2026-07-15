@@ -15,6 +15,8 @@ from models.document import Document
 from schemas.invoice import UploadResponse
 from services.vision import extract_invoice
 from schemas.invoice import DocumentUpdate
+from services.watermark import add_watermark
+from fastapi.responses import FileResponse
 router = APIRouter()
 
 UPLOAD_FOLDER = "uploads"
@@ -114,6 +116,13 @@ def extract_document(
     result = extract_invoice(
         document.image_path
     )
+    
+    processed_image = add_watermark(
+    document.image_path,
+    document.id
+    )
+
+    document.processed_image_path = processed_image
 
     document.vendor = result.get("vendor")
 
@@ -208,3 +217,29 @@ def update_document(
         "message": "Updated Successfully",
         "document": document
     }
+    
+@router.get("/processed/{document_id}")
+def get_processed_image(
+    document_id: int,
+    db: Session = Depends(get_db)
+):
+
+    document = db.get(Document, document_id)
+
+    if document is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    if not document.processed_image_path:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Processed image not found"
+        )
+
+    return FileResponse(
+        document.processed_image_path
+    )

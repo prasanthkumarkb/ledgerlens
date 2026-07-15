@@ -1,19 +1,28 @@
-venv/
-
-.env
-
-uploads/
-
+# Python
 __pycache__/
-
 *.pyc
-
-.idea/
-
-.vscode/
-
 .pytest_cache/
 
+# Virtual environment
+venv/
+.env
+
+# Database
+*.db
 *.sqlite3
 
-*.db
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Processed images
+backend/processed/*
+!backend/processed/.gitkeep
+
+# Logs
+backend/logs/*
+!backend/logs/.gitkeep
+
+# IDE
+.vscode/
+.idea/

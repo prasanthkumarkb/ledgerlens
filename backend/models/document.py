@@ -68,6 +68,10 @@ class Document(Base):
     image_path = Column(
         String(500)
     )
+    
+    processed_image_path = Column(
+    String(500)
+    )
 
     created_at = Column(
         DateTime(timezone=True),
