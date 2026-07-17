@@ -5,8 +5,9 @@ import time
 from PIL import Image
 import matplotlib.pyplot as plt
 from components.loader import show_loader
+import os
 
-API_URL = "http://127.0.0.1:8000"
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(page_title="LedgerLens", page_icon="📄", layout="wide")
 
