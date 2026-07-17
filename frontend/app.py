@@ -1,8 +1,10 @@
 import requests
 import streamlit as st
 import pandas as pd
+import time
 from PIL import Image
 import matplotlib.pyplot as plt
+from components.loader import show_loader
 
 API_URL = "http://127.0.0.1:8000"
 
@@ -11,8 +13,18 @@ st.set_page_config(page_title="LedgerLens", page_icon="📄", layout="wide")
 st.title("📄 LedgerLens")
 st.subheader("AI Invoice Extraction")
 
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["Upload Invoice", "Documents", "Manual Review", "Dashboard"]
+(
+    tab1,
+    tab2,
+    tab3,
+    tab4,
+) = st.tabs(
+    [
+        "Upload Invoice",
+        "Documents",
+        "Manual Review",
+        "Dashboard",
+    ]
 )
 
 #############################################
@@ -36,6 +48,10 @@ with tab1:
 
             if st.button("Upload Invoice"):
 
+                # loader = show_loader()
+
+                time.sleep(1)  # Simulate processing time for demonstration purposes
+
                 files = {
                     "file": (
                         uploaded_file.name,
@@ -48,8 +64,11 @@ with tab1:
                 with st.spinner("🤖 Processing invoice..."):
 
                     progress.progress(30)
-
+                try:
+                    loader = show_loader()
+                    time.sleep(2)
                     response = requests.post(f"{API_URL}/ingest", files=files)
+                finally:
 
                     progress.progress(100)
 
@@ -86,15 +105,18 @@ with tab1:
                             st.metric("Tax", result.get("tax", ""))
                             st.metric("Total", result.get("total", ""))
 
-                        st.progress(min(max(result.get("confidence", 0), 0), 1))
-                        st.write(f"Confidence: {result.get('confidence', 0):.2%}")
+                        st.progress(min(max(result.get("overall_confidence", 0), 0), 1))
+                        st.write(
+                            f"Confidence: {result.get('overall_confidence', 0):.2%}"
+                        )
+                        loader.empty()
 
                     else:
-
+                        loader.empty()
                         st.error(response.text)
 
                 else:
-
+                    loader.empty()
                     st.error(response.text)
 
 
@@ -173,7 +195,7 @@ with tab2:
 
             display_columns = [c for c in display_columns if c in df.columns]
 
-            st.dataframe(df[display_columns], use_container_width=True, hide_index=True)
+            st.dataframe(df[display_columns], width="stretch", hide_index=True)
 
         else:
             st.warning("No Documents Found")
@@ -242,7 +264,7 @@ with tab3:
 
         image_url = f"{API_URL}/processed/{document_id}"
 
-        st.image(image_url, caption="Watermarked Invoice", use_container_width=True)
+        st.image(image_url, caption="Watermarked Invoice", width="stretch")
 
         if st.button("Save Changes"):
 
@@ -353,7 +375,7 @@ with tab4:
 
                 ax.set_title("Document Status", fontsize=12)
 
-                st.pyplot(fig, use_container_width=False)
+                st.pyplot(fig, width="content")
 
             else:
 
@@ -389,7 +411,7 @@ with tab4:
 
                 plt.xticks(rotation=45)
 
-                st.pyplot(fig, use_container_width=False)
+                st.pyplot(fig, width="content")
 
             else:
 

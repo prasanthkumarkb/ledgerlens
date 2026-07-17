@@ -136,8 +136,9 @@ def extract_document(document_id: int, db: Session = Depends(get_db)):
 
         result = extract_invoice(document.image_path)
 
-    except Exception:
-        raise AIExtractionException()
+    except Exception as ex:
+        # raise AIExtractionException()
+        raise HTTPException(status_code=500, detail=str(ex))
 
     processed_image = add_watermark(document.image_path, document.id)
 
@@ -157,7 +158,7 @@ def extract_document(document_id: int, db: Session = Depends(get_db)):
 
     document.total = result.get("total")
 
-    document.overall_confidence = result.get("confidence")
+    document.overall_confidence = result.get("overall_confidence")
 
     document.extracted_json = json.dumps(result)
 
