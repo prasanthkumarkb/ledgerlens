@@ -11,13 +11,13 @@ from core.logger import logger
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-# OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+# OPENAI_MODEL = os.getenv("OPENAI_MODEL", "")
 
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY is missing in .env file")
 
-client = Groq(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # models = client.models.list()
 
